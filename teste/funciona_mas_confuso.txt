@@ -1,0 +1,236 @@
+# main.py
+from constraint import Problem
+from itertools import product
+
+# 1️⃣ Dados
+dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
+horas = [9, 11, 14, 16]
+salas = ["Room A", "Room B", "Room C", "Room D"]
+turmas = [1, 2]
+ucs = list(range(1, 11))
+professores = [1, 2, 3, 4, 5]
+
+# Mapeamento simplificado
+uc_to_turma = {
+    1: 1, 2: 1, 3: 1, 4: 1, 5: 1,  # Turma 1: 5 UCs
+    6: 2, 7: 2, 8: 2, 9: 2, 10: 2  # Turma 2: 5 UCs
+}
+
+uc_to_professor = {
+    1: 1, 2: 2, 3: 3, 4: 4, 5: 5,
+    6: 1, 7: 2, 8: 3, 9: 4, 10: 5
+}
+
+# Disponibilidades CORRIGIDAS - todos os professores com mais dias disponíveis
+disponibilidades = [
+    # Professor 1 - disponível em 4 dias
+    {"prof_id": 1, "dia": "Segunda", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 1, "dia": "Terça", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 1, "dia": "Quarta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 1, "dia": "Quinta", "hora_inicio": 8, "hora_fim": 18},
+    # Professor 2 - disponível em 4 dias
+    {"prof_id": 2, "dia": "Segunda", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 2, "dia": "Terça", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 2, "dia": "Quarta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 2, "dia": "Sexta", "hora_inicio": 8, "hora_fim": 18},
+    # Professor 3 - disponível em 4 dias
+    {"prof_id": 3, "dia": "Segunda", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 3, "dia": "Terça", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 3, "dia": "Quarta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 3, "dia": "Quinta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 3, "dia": "Sexta", "hora_inicio": 8, "hora_fim": 18},
+    # Professor 4 - disponível em 4 dias
+    {"prof_id": 4, "dia": "Segunda", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 4, "dia": "Quarta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 4, "dia": "Quinta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 4, "dia": "Sexta", "hora_inicio": 8, "hora_fim": 18},
+    # Professor 5 - disponível em 4 dias
+    {"prof_id": 5, "dia": "Segunda", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 5, "dia": "Terça", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 5, "dia": "Quarta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 5, "dia": "Quinta", "hora_inicio": 8, "hora_fim": 18},
+    {"prof_id": 5, "dia": "Sexta", "hora_inicio": 8, "hora_fim": 18},
+]
+
+# 2️⃣ Função para horários disponíveis
+def horarios_disponiveis(prof_id):
+    disponiveis = []
+    for d, h in product(dias, horas):
+        for disp in disponibilidades:
+            if (d == disp['dia'] and disp['prof_id'] == prof_id and 
+                disp['hora_inicio'] <= h < disp['hora_fim']):
+                disponiveis.append((d, h))
+                break
+    return disponiveis
+
+# 3️⃣ Criar CSP
+problem = Problem()
+
+# 4️⃣ Adicionar variáveis - 2 aulas por UC (total 20 aulas = 10 por turma)
+all_vars = []
+for uc in ucs:
+    turma = uc_to_turma[uc]
+    professor = uc_to_professor[uc]
+    
+    domain_uc = []
+    disponivel_prof = horarios_disponiveis(professor)
+    
+    for s in salas:
+        for d, h in disponivel_prof:
+            domain_uc.append((d, h, s, professor, turma, uc))
+    
+    if domain_uc:
+        # Cada UC tem 2 aulas por semana
+        problem.addVariable(f"UC{uc}_A1", domain_uc)
+        problem.addVariable(f"UC{uc}_A2", domain_uc)
+        all_vars.extend([f"UC{uc}_A1", f"UC{uc}_A2"])
+
+# print(f"Total de variáveis: {len(all_vars)}")
+
+# 5️⃣ Conflito de sala/horário (mais permissivo)
+def no_same_room_same_time(a1, a2):
+    # Apenas evitar mesma sala no mesmo horário
+    return not (a1[0] == a2[0] and a1[1] == a2[1] and a1[2] == a2[2])
+
+# Aplicar apenas para conflitos diretos
+for i in range(len(all_vars)):
+    for j in range(i + 1, len(all_vars)):
+        problem.addConstraint(no_same_room_same_time, (all_vars[i], all_vars[j]))
+
+# 6️⃣ Máx. 3 aulas por turma por dia (mais flexível)
+def max_three_per_day_turma(*aulas):
+    count_por_dia_turma = {}
+    for aula in aulas:
+        dia, _, _, _, turma, _ = aula
+        key = f"{turma}_{dia}"
+        count_por_dia_turma[key] = count_por_dia_turma.get(key, 0) + 1
+        if count_por_dia_turma[key] > 3:
+            return False
+    return True
+
+# Aplicar separadamente por turma
+for turma in turmas:
+    vars_turma = [v for v in all_vars if f"_A" in v and any(v.startswith(f"UC{uc}_") and uc_to_turma[uc] == turma for uc in ucs)]
+    if vars_turma:
+        problem.addConstraint(max_three_per_day_turma, vars_turma)
+
+# 7️⃣ Aulas da mesma UC em dias diferentes
+def same_uc_different_days(a1, a2):
+    uc1 = a1[5]
+    uc2 = a2[5]
+    if uc1 == uc2:
+        return a1[0] != a2[0]  # Dias diferentes
+    return True
+
+for uc in ucs:
+    problem.addConstraint(same_uc_different_days, (f"UC{uc}_A1", f"UC{uc}_A2"))
+
+# 8️⃣ Garantir que cada UC tenha exatamente 2 aulas
+def exactly_two_per_uc(*aulas):
+    count_por_uc = {}
+    for aula in aulas:
+        _, _, _, _, _, uc = aula
+        count_por_uc[uc] = count_por_uc.get(uc, 0) + 1
+    
+    # Verificar se cada UC tem exatamente 2 aulas
+    for uc in ucs:
+        if count_por_uc.get(uc, 0) != 2:
+            return False
+    return True
+
+# Aplicar a restrição global
+problem.addConstraint(exactly_two_per_uc, all_vars)
+
+# 9️⃣ GARANTIR QUE CADA TURMA TENHA EXATAMENTE 10 AULAS
+def exactly_ten_per_turma(*aulas):
+    count_por_turma = {}
+    for aula in aulas:
+        _, _, _, _, turma, _ = aula
+        count_por_turma[turma] = count_por_turma.get(turma, 0) + 1
+    
+    # Verificar se cada turma tem exatamente 10 aulas
+    for turma in turmas:
+        if count_por_turma.get(turma, 0) != 10:
+            return False
+    return True
+
+# Aplicar a restrição global
+problem.addConstraint(exactly_ten_per_turma, all_vars)
+
+# 🔟 Tentar encontrar solução
+print("A procurar soluções...")
+
+try:
+    solucao = problem.getSolution()
+    if solucao:
+        print("✅ Solução encontrada!")
+        
+        # Organizar e mostrar a solução
+        aulas_por_turma = {1: 0, 2: 0}
+        aulas_por_dia_turma = {}
+        aulas_por_uc = {uc: 0 for uc in ucs}
+        
+        for turma in turmas:
+            print(f"\n📚 Turma {turma}")
+            tabela = {dia: {h: "" for h in horas} for dia in dias}
+            
+            for var, valores in solucao.items():
+                dia, hora, sala, prof, t, uc = valores
+                if t == turma:
+                    aulas_por_turma[turma] += 1
+                    key = (t, dia)
+                    aulas_por_dia_turma[key] = aulas_por_dia_turma.get(key, 0) + 1
+                    aulas_por_uc[uc] += 1
+                    tabela[dia][hora] = f"UC{uc}(P{prof})"
+            
+            # Cabeçalho
+            print(f"{'Hora':<6}", end="")
+            for dia in dias:
+                print(f"{dia:<15}", end="")
+            print()
+            
+            # Horários
+            for h in horas:
+                print(f"{h:<6}", end="")
+                for dia in dias:
+                    print(f"{tabela[dia][h]:<15}", end="")
+                print()
+        
+        # VERIFICAÇÃO EXPLÍCITA DAS 10 AULAS POR TURMA
+        print(f"\n🎯 VERIFICAÇÃO DAS 10 AULAS POR TURMA:")
+        for turma in turmas:
+            total_aulas = aulas_por_turma[turma]
+            status = "✅ CUMPRIDO" if total_aulas == 10 else f"❌ FALHOU: {total_aulas} aulas em vez de 10"
+            print(f"Turma {turma}: {total_aulas} aulas - {status}")
+        
+        # Verificação detalhada
+        print(f"\n📊 VERIFICAÇÃO DETALHADA:")
+        print(f"\nAULAS POR UC:")
+        for uc in sorted(aulas_por_uc.keys()):
+            count = aulas_por_uc[uc]
+            status = "✓" if count == 2 else f"✗ (deveria ser 2, mas é {count})"
+            print(f"  UC{uc}: {count} aulas {status}")
+        
+        print(f"\nAULAS POR DIA POR TURMA:")
+        for turma in turmas:
+            print(f"\nTurma {turma}:")
+            for dia in dias:
+                count = aulas_por_dia_turma.get((turma, dia), 0)
+                status = "✓" if count <= 3 else "✗"
+                print(f"  {dia}: {count} aulas {status}")
+                
+    else:
+        print("❌ Nenhuma solução encontrada")
+        
+except Exception as e:
+    print(f"❌ Erro: {e}")
+    print("Tentando abordagem alternativa...")
+    
+    # Abordagem alternativa: gerar algumas soluções possíveis
+    solucoes = problem.getSolutions()
+    if solucoes:
+        print(f"Encontradas {len(solucoes)} soluções")
+        solucao = solucoes[0]
+        # Mostrar a primeira solução...
+    else:
+        print("Nenhuma solução encontrada com a abordagem alternativa")
