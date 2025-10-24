@@ -1,6 +1,11 @@
-id,curso_id,n_aulas_semana,nome
-1,1,2,Programação
-2,1,2,Álgebra
-3,1,2,Cálculo
-4,1,2,Arquitetura
-5,1,2,Visão
+id,nome,curso_id,n_aulas_semana
+1,Programação,1,2
+2,Base de Dados,1,2
+3,Redes,1,2
+4,Matemática,1,2
+5,Arquitetura,1,2
+6,Sistemas Operativos,2,2
+7,Algoritmos,2,2
+8,Segurança,2,2
+9,Web Development,2,2
+10,Inteligência Artificial,2,2
