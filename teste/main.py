@@ -1,6 +1,7 @@
 from constraint import Problem
 from data_config import *
-from constraints_def import *
+from hard_constraints_def import *
+from soft_constraints_def import *
 
 # Criar CSP
 problem = Problem()
@@ -35,6 +36,40 @@ problem.addConstraint(lambda *a: exactly_two_per_uc(*a, ucs=ucs), all_vars)
 
 # Cada turma → 10 aulas
 problem.addConstraint(lambda *a: exactly_ten_per_turma(*a, turmas=turmas), all_vars)
+
+
+print("🧩 A procurar soluções válidas...")
+# Gera soluções de forma iterativa e limita a quantidade
+solucoes = []
+max_solucoes = 500  # ← ajusta conforme o tamanho do problema
+
+for sol in problem.getSolutionIter():
+    solucoes.append(sol)
+    if len(solucoes) >= max_solucoes:
+        break
+
+if not solucoes:
+    print("❌ Nenhuma solução encontrada")
+else:
+    print(f"✅ Foram encontradas {len(solucoes)} soluções válidas\n")
+    print("🔎 A avaliar qualidade das soluções...")
+
+    def avaliar_solucao(sol):
+        aulas = list(sol.values())
+        score = 0
+        if check_distinct_day_classes(*aulas): score += 1
+        if check_weekly_days(*aulas): score += 1
+        if check_consecutive_classes(*aulas): score += 1
+        if check_different_classes(*aulas): score += 1
+        return score
+
+    avaliadas = [(sol, avaliar_solucao(sol)) for sol in solucoes]
+    avaliadas.sort(key=lambda x: x[1], reverse=True)
+
+    melhor_sol, melhor_score = avaliadas[0]
+    print(f"🏆 Melhor solução com pontuação {melhor_score}/4\n")
+
+
 
 # Resolver
 print("🧩 A procurar solução...")
