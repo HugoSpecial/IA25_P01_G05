@@ -41,7 +41,7 @@ problem.addConstraint(lambda *a: exactly_ten_per_turma(*a, turmas=turmas), all_v
 print("🧩 A procurar soluções válidas...")
 # Gera soluções de forma iterativa e limita a quantidade
 solucoes = []
-max_solucoes = 500  # ← ajusta conforme o tamanho do problema
+max_solucoes = 5000  # ← ajusta conforme o tamanho do problema
 
 for sol in problem.getSolutionIter():
     solucoes.append(sol)

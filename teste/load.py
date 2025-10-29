@@ -1,9 +1,6 @@
 import csv
 
 def load_csv(path):
-    """
-    Carrega um ficheiro CSV e devolve uma lista de dicionários.
-    """
     data = []
     with open(path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -64,9 +61,6 @@ def load_classes(path='dados/turmas.csv'):
     return turmas_unique
 
 def load_all():
-    """
-    Carrega todos os dados e devolve num único dicionário.
-    """
     return {
         'cursos': load_courses(),
         'professores': load_teachers(),
@@ -76,7 +70,6 @@ def load_all():
         'disponibilidades': load_availabilities()
     }
 
-# Teste rápido
 if __name__ == "__main__":
     dados = load_all()
     print("=== Cursos ===")

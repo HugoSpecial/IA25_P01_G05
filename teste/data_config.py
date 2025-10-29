@@ -5,7 +5,7 @@ dados = load_all()
 
 # Configuração básica
 dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
-horas = [8, 10, 14, 16]
+horas = [9, 11, 14, 16]
 salas = [s['nome'] for s in dados['salas']]
 turmas = [t['id'] for t in dados['turmas']]
 ucs = [uc['id'] for uc in dados['unidades_curriculares']]
