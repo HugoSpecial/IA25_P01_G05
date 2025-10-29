@@ -29,3 +29,9 @@ def exactly_ten_per_turma(*aulas, turmas=None):
     for aula in aulas:
         count[aula[4]] += 1
     return all(v==10 for v in count.values())
+
+# Cada aula → 2 horas
+def check_duration(aula):
+    _, hora, _, _, _, _ = aula
+    blocos_validos = [9, 11, 14, 16]
+    return hora in blocos_validos
