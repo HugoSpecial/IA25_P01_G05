@@ -11,7 +11,7 @@ all_vars = []
 for uc in ucs:
     turma = uc_to_turma[uc]
     prof = uc_to_professor[uc]
-    disp = horarios_disponiveis(prof)
+    disp = check_professor_availability(prof)
     dominio = [(d, h, s, prof, turma, uc) for s in salas for d, h in disp]
     problem.addVariable(f"UC{uc}_A1", dominio)
     problem.addVariable(f"UC{uc}_A2", dominio)

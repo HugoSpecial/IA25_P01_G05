@@ -28,7 +28,7 @@ for i, uc in enumerate(dados['unidades_curriculares']):
 # Disponibilidades do CSV
 disponibilidades = dados['disponibilidades']
 
-def horarios_disponiveis(prof_id):
+def check_professor_availability(prof_id):
     disponiveis = []
     for d, h in product(dias, horas):
         for disp in disponibilidades:
