@@ -6,6 +6,21 @@ def no_same_room_same_time(a1, a2):
     """
     return not (a1[0] == a2[0] and a1[1] == a2[1])
 
+def no_same_turma_same_time(a1, a2):
+    """
+    Não permitir duas aulas da mesma turma no mesmo bloco horário.
+    a1, a2 = (slot, sala, prof, turma, uc)
+    """
+    return not (a1[0] == a2[0] and a1[3] == a2[3])
+
+# Não permitir que um professor tenha duas aulas no mesmo horário
+def no_same_professor_same_time(a1, a2):
+    """
+    Não permitir que o mesmo professor tenha duas aulas no mesmo bloco horário.
+    a1, a2 = (slot, sala, prof, turma, uc)
+    """
+    return not (a1[0] == a2[0] and a1[2] == a2[2])
+
 # Máximo 3 aulas/dia por turma
 def max_three_per_day_turma(*aulas):
     """
@@ -48,8 +63,3 @@ def exactly_ten_per_turma(*aulas, turmas=None):
     for aula in aulas:
         count[aula[3]] += 1
     return all(v == 10 for v in count.values())
-
-# Check de duração não é mais necessário
-# Todos os blocos já têm 2 horas
-def check_duration(aula):
-    return True

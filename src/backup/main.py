@@ -11,7 +11,7 @@ dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
 blocos = list(range(1, 21))
 
 # Salas
-salas = ["Lab01", "Lab02", "Lab03"]  # Ajustar se tiveres mais salas
+salas = ["Lab01", "Lab02", "Lab03"]
 
 # Turmas e UCs
 turmas = list(dados['classes'].keys())
@@ -74,9 +74,6 @@ for uc in ucs:
     var1, var2 = f"UC{uc}_A1", f"UC{uc}_A2"
     if var1 in all_vars and var2 in all_vars:
         problem.addConstraint(same_uc_different_days, (var1, var2))
-
-for var in all_vars:
-    problem.addConstraint(check_duration, [var])
 
 problem.addConstraint(lambda *a: exactly_two_per_uc(*a, ucs=ucs), all_vars)
 problem.addConstraint(lambda *a: exactly_ten_per_turma(*a, turmas=turmas), all_vars)

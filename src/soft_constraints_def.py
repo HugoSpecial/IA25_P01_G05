@@ -1,5 +1,3 @@
-# soft_constraints_def.py
-
 # Cada UC não deve ter aulas em mais de 2 dias diferentes
 def check_distinct_day_classes(*aulas):
     uc_days = {}

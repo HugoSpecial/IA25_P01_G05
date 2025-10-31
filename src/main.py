@@ -55,10 +55,11 @@ for uc in ucs:
     problem.addVariable(var2, dominio)
     all_vars.extend([var1, var2])
 
-# === Adicionar hard constraints ===
 for i in range(len(all_vars)):
     for j in range(i + 1, len(all_vars)):
         problem.addConstraint(no_same_room_same_time, (all_vars[i], all_vars[j]))
+        problem.addConstraint(no_same_turma_same_time, (all_vars[i], all_vars[j]))
+        problem.addConstraint(no_same_professor_same_time, (all_vars[i], all_vars[j]))
 
 for t in turmas:
     vars_t = [v for v in all_vars if uc_to_turma[v.split('_')[0][2:]] == t]
@@ -70,17 +71,18 @@ for uc in ucs:
     if var1 in all_vars and var2 in all_vars:
         problem.addConstraint(same_uc_different_days, (var1, var2))
 
-# === Gerar soluções iterativamente com filtragem ===
+problem.addConstraint(lambda *a: exactly_two_per_uc(*a, ucs=ucs), all_vars)
+problem.addConstraint(lambda *a: exactly_ten_per_turma(*a, turmas=turmas), all_vars)
+
+# === Gerar soluções iterativamente ===
 print("🧩 A gerar soluções válidas...")
 MAX_SOLUTIONS = 200
 solucoes = []
 
 for sol in problem.getSolutionIter():
-    aulas = list(sol.values())
-    if exactly_two_per_uc(*aulas, ucs=ucs) and exactly_ten_per_turma(*aulas, turmas=turmas):
-        solucoes.append(sol)
-        if len(solucoes) >= MAX_SOLUTIONS:
-            break
+    solucoes.append(sol)
+    if len(solucoes) >= MAX_SOLUTIONS:
+        break
 
 if not solucoes:
     print("❌ Nenhuma solução possível com os dados atuais")
