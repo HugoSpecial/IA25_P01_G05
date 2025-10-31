@@ -1,37 +1,20 @@
 # Conflitos de sala
 def no_same_room_same_time(a1, a2):
-    """
-    Não permitir duas aulas na mesma sala no mesmo bloco.
-    a1, a2 = (slot, sala, prof, turma, uc)
-    """
     return not (a1[0] == a2[0] and a1[1] == a2[1])
 
 def no_same_turma_same_time(a1, a2):
-    """
-    Não permitir duas aulas da mesma turma no mesmo bloco horário.
-    a1, a2 = (slot, sala, prof, turma, uc)
-    """
     return not (a1[0] == a2[0] and a1[3] == a2[3])
 
 # Não permitir que um professor tenha duas aulas no mesmo horário
 def no_same_professor_same_time(a1, a2):
-    """
-    Não permitir que o mesmo professor tenha duas aulas no mesmo bloco horário.
-    a1, a2 = (slot, sala, prof, turma, uc)
-    """
     return not (a1[0] == a2[0] and a1[2] == a2[2])
 
 # Máximo 3 aulas/dia por turma
 def max_three_per_day_turma(*aulas):
-    """
-    Nenhuma turma pode ter mais de 3 aulas num mesmo dia.
-    a1 = (slot, sala, prof, turma, uc)
-    """
-    # Mapear slot 1-20 para dia 1-5
     count_por_dia_turma = {}
     for aula in aulas:
         slot, _, _, turma, _ = aula
-        dia = (slot - 1) // 4 + 1  # 1=Seg, 2=Ter, ..., 5=Sex
+        dia = (slot - 1) // 4 + 1
         key = f"{turma}_{dia}"
         count_por_dia_turma[key] = count_por_dia_turma.get(key, 0) + 1
         if count_por_dia_turma[key] > 3:
@@ -40,10 +23,6 @@ def max_three_per_day_turma(*aulas):
 
 # Aulas da mesma UC em dias diferentes
 def same_uc_different_days(a1, a2):
-    """
-    Garantir que duas aulas da mesma UC não fiquem no mesmo dia.
-    a1, a2 = (slot, sala, prof, turma, uc)
-    """
     if a1[4] != a2[4]:
         return True
     dia1 = (a1[0] - 1) // 4

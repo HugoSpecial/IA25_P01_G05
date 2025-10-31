@@ -67,8 +67,8 @@ def load_data_txt(path='dados/data.txt'):
 
     # Converter restrições em disponibilidades para todos os professores
     all_slots = set(range(1, 21))  # 20 blocos (5 dias × 4 blocos)
-    for prof in data['teachers'].keys():  # garantir todos os professores
-        unavailable = data['time_restrictions'].get(prof, [])  # se não tiver, assume []
+    for prof in data['teachers'].keys(): 
+        unavailable = data['time_restrictions'].get(prof, [])
         available = sorted(all_slots - set(unavailable))
         data['time_availabilities'][prof] = available
 

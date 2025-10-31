@@ -2,9 +2,8 @@
 def check_distinct_day_classes(*aulas):
     uc_days = {}
     for aula in aulas:
-        dia, _, _, _, _, uc = aula  # dia é string, ex: "Segunda"
+        dia, _, _, _, _, uc = aula  
         uc_days.setdefault(uc, set()).add(dia)
-    # penaliza se uma UC tiver mais de 2 dias
     return sum(len(dias) - 2 for dias in uc_days.values() if len(dias) > 2) == 0
 
 
@@ -12,7 +11,7 @@ def check_distinct_day_classes(*aulas):
 def check_weekly_days(*aulas):
     turma_days = {}
     for aula in aulas:
-        dia, _, _, _, turma, _ = aula  # dia é string
+        dia, _, _, _, turma, _ = aula
         turma_days.setdefault(turma, set()).add(dia)
     return all(len(dias) <= 4 for dias in turma_days.values())
 
@@ -27,7 +26,7 @@ def check_consecutive_classes(*aulas):
     for horas in turma_dia_horas.values():
         horas_ordenadas = sorted(horas)
         for i in range(1, len(horas_ordenadas)):
-            if horas_ordenadas[i] - horas_ordenadas[i-1] != 2:  # cada aula tem 2h
+            if horas_ordenadas[i] - horas_ordenadas[i-1] != 2:
                 return False
     return True
 
