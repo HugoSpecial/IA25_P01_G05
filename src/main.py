@@ -114,7 +114,7 @@ avaliadas.sort(key=lambda x: x[1], reverse=True)
 melhor_sol, melhor_score = avaliadas[0]
 print(f"🏆 Melhor solução encontrada com pontuação: {melhor_score}/4\n")
 
-#  Visualizar melhor solução 
+# Visualizar melhor solução 
 for t in turmas:
     print(f"📘 Turma {t}")
     tabela = {dia: [""]*4 for dia in dias}
