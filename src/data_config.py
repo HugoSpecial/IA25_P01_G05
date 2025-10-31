@@ -1,40 +1,45 @@
 from itertools import product
-from load import *
+from load import load_data_txt
 
-dados = load_all()
+# Carregar dados
+dados = load_data_txt('dados/data.txt')
 
-# Configuração básica
-dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
-horas = [9, 11, 14, 16]
-salas = [s['nome'] for s in dados['salas']]
-turmas = [t['id'] for t in dados['turmas']]
-ucs = [uc['id'] for uc in dados['unidades_curriculares']]
-professores = [p['id'] for p in dados['professores']]
+# Turmas e UCs
+turmas = list(dados['classes'].keys())  # Ex.: ['t01', 't02', 't03']
+ucs = [uc for ucs_list in dados['classes'].values() for uc in ucs_list]
 
+# Professores
+professores = list(dados['teachers'].keys())  # Ex.: ['jo', 'mike', 'rob', 'sue']
+
+# Salas (podes adicionar mais se necessário)
+salas = ['Lab01', 'Lab02', 'Lab03', 'Lab04']
+
+# UC → Turma
 uc_to_turma = {}
+for t, ucs_list in dados['classes'].items():
+    for uc in ucs_list:
+        uc_to_turma[uc] = t
+
+# UC → Professores (uma UC pode ter mais que um professor)
 uc_to_professor = {}
+for prof, ucs_list in dados['teachers'].items():
+    for uc in ucs_list:
+        uc_to_professor.setdefault(uc, []).append(prof)
 
-# Distribuir UCs pelas turmas
-for i, uc in enumerate(dados['unidades_curriculares']):
-    uc_id = uc['id']
-    # Alternar entre turmas (0 → turma1, 1 → turma2, etc.)
-    turma_index = i % len(turmas)
-    uc_to_turma[uc_id] = turmas[turma_index]
-    
-    # Distribuir professores
-    prof_index = i % len(professores)
-    uc_to_professor[uc_id] = professores[prof_index]
+# Disponibilidades dos professores (slots 1–20)
+disponibilidades = dados['time_availabilities']
 
-# Disponibilidades do CSV
-disponibilidades = dados['disponibilidades']
+# Função para obter slots disponíveis de um professor
+def horarios_disponiveis(prof):
+    return disponibilidades.get(prof, [])
 
-def check_professor_availability(prof_id):
-    disponiveis = []
-    for d, h in product(dias, horas):
-        for disp in disponibilidades:
-            if (disp['prof_id'] == prof_id and 
-                disp['dia'] == d and 
-                disp['hora_inicio'] <= h < disp['hora_fim']):
-                disponiveis.append((d, h))
-                break
-    return disponiveis
+# Teste rápido
+if __name__ == "__main__":
+    print("=== TURMAS ===", turmas)
+    print("=== UCs ===", ucs)
+    print("=== PROFESSORES ===", professores)
+    print("=== UC → TURMA ===", uc_to_turma)
+    print("=== UC → PROFESSOR ===", uc_to_professor)
+    print("=== DISPONIBILIDADES ===")
+    for prof, slots in disponibilidades.items():
+        print(f"{prof}: {slots}")

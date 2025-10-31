@@ -6,18 +6,24 @@ from soft_constraints_def import *
 # === Carregar dados ===
 dados = load_data_txt()
 
+# Dias e blocos (1 a 20)
 dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
 blocos = list(range(1, 21))
-horas = [9, 11, 14, 16]
 
-salas = ["Lab01", "Lab02", "Lab03"]
+# Salas
+salas = ["Lab01", "Lab02", "Lab03"]  # Ajustar se tiveres mais salas
 
+# Turmas e UCs
 turmas = list(dados['classes'].keys())
 ucs = [uc for ucs_list in dados['classes'].values() for uc in ucs_list]
+
+# Professores
+professores = list(dados['teachers'].keys())
 
 # UC → Turma e UC → Professor
 uc_to_turma = {}
 uc_to_professor = {}
+
 for turma, ucs_list in dados['classes'].items():
     for uc in ucs_list:
         uc_to_turma[uc] = turma
@@ -34,26 +40,25 @@ for uc in ucs:
     turma = uc_to_turma[uc]
     prof = uc_to_professor.get(uc)
     if not prof:
-        print(f"⚠️ UC {uc} sem professor. Ignorada.")
+        print(f"⚠️ UC {uc} não tem professor atribuído. Ignorada.")
         continue
 
     disp_slots = dados['time_availabilities'].get(prof, list(range(1, 21)))
     if not disp_slots:
-        print(f"⚠️ UC {uc} do prof {prof} sem slots. Ignorada.")
+        print(f"⚠️ UC {uc} do professor {prof} não tem slots disponíveis. Ignorada.")
         continue
 
+    # Restrições de sala
     salas_validas = [dados['room_restrictions'][uc]] if uc in dados['room_restrictions'] else salas
-    dominio = [(slot, s, prof, turma, uc) for slot in disp_slots for s in salas_validas]
 
+    dominio = [(int(slot), s, prof, turma, uc) for slot in disp_slots for s in salas_validas]
     if not dominio:
-        print(f"⚠️ UC {uc} sem domínios válidos. Ignorada.")
+        print(f"⚠️ UC {uc} não tem domínios válidos. Ignorada.")
         continue
 
-    # Variáveis separadas para cada aula da UC
-    var1, var2 = f"UC{uc}_A1", f"UC{uc}_A2"
-    problem.addVariable(var1, dominio)
-    problem.addVariable(var2, dominio)
-    all_vars.extend([var1, var2])
+    problem.addVariable(f"UC{uc}_A1", dominio)
+    problem.addVariable(f"UC{uc}_A2", dominio)
+    all_vars.extend([f"UC{uc}_A1", f"UC{uc}_A2"])
 
 # === Adicionar hard constraints ===
 for i in range(len(all_vars)):
@@ -70,26 +75,14 @@ for uc in ucs:
     if var1 in all_vars and var2 in all_vars:
         problem.addConstraint(same_uc_different_days, (var1, var2))
 
-# === Gerar soluções iterativamente com filtragem ===
-print("🧩 A gerar soluções válidas...")
-MAX_SOLUTIONS = 200
-solucoes = []
+for var in all_vars:
+    problem.addConstraint(check_duration, [var])
 
-for sol in problem.getSolutionIter():
-    aulas = list(sol.values())
-    if exactly_two_per_uc(*aulas, ucs=ucs) and exactly_ten_per_turma(*aulas, turmas=turmas):
-        solucoes.append(sol)
-        if len(solucoes) >= MAX_SOLUTIONS:
-            break
+problem.addConstraint(lambda *a: exactly_two_per_uc(*a, ucs=ucs), all_vars)
+problem.addConstraint(lambda *a: exactly_ten_per_turma(*a, turmas=turmas), all_vars)
 
-if not solucoes:
-    print("❌ Nenhuma solução possível com os dados atuais")
-    exit()
-
-print(f"✅ Encontradas {len(solucoes)} soluções válidas (limitadas a {MAX_SOLUTIONS})")
-
-# === Avaliar soft constraints ===
-def pontuacao(sol):
+# === Função para normalizar slots e criar tuplas completas (dia, hora, sala, prof, turma, uc) ===
+def normalize_aulas(sol):
     aulas = []
     for val in sol.values():
         slot, sala, prof, turma, uc = val
@@ -97,8 +90,13 @@ def pontuacao(sol):
         dia_index = (slot - 1) // 4
         bloco_index = (slot - 1) % 4
         dia = dias[dia_index]
-        hora = horas[bloco_index]
+        hora = [9, 11, 14, 16][bloco_index]
         aulas.append((dia, hora, sala, prof, turma, uc))
+    return aulas
+
+# === Avaliar soft constraints ===
+def pontuacao(sol):
+    aulas = normalize_aulas(sol)
     score = 0
     if check_distinct_day_classes(*aulas): score += 1
     if check_weekly_days(*aulas): score += 1
@@ -106,6 +104,22 @@ def pontuacao(sol):
     if check_different_classes(*aulas): score += 1
     return score
 
+# === Gerar soluções válidas iterativamente ===
+print("🧩 A gerar soluções válidas...")
+solucoes = []
+MAX_SOLUTIONS = 50  # limitar para não travar
+for sol in problem.getSolutionIter():
+    solucoes.append(sol)
+    if len(solucoes) >= MAX_SOLUTIONS:
+        break
+
+if not solucoes:
+    print("❌ Nenhuma solução possível com os dados atuais")
+    exit()
+
+print(f"✅ Encontradas {len(solucoes)} soluções válidas (limitadas a {MAX_SOLUTIONS})")
+
+# === Avaliar e ordenar soluções por soft constraints ===
 avaliadas = [(sol, pontuacao(sol)) for sol in solucoes]
 avaliadas.sort(key=lambda x: x[1], reverse=True)
 
@@ -115,12 +129,12 @@ print(f"🏆 Melhor solução encontrada com pontuação: {melhor_score}/4\n")
 # === Visualizar melhor solução ===
 for t in turmas:
     print(f"📘 Turma {t}")
-    tabela = {dia: [""]*4 for dia in dias}
+    tabela = {dia: [""]*4 for dia in dias}  # 4 blocos por dia
     for val in melhor_sol.values():
         slot, sala, prof, turma, uc = val
         if turma == t:
-            dia_index = (slot-1)//4
-            bloco_index = (slot-1)%4
+            dia_index = (int(slot)-1)//4
+            bloco_index = (int(slot)-1)%4
             tabela[dias[dia_index]][bloco_index] = f"{uc} ({sala}, {prof})"
 
     print(f"{'Bloco':<6}" + ''.join(f"{d:<22}" for d in dias))

@@ -1,97 +1,91 @@
-import csv
-
-def load_csv(path):
-    data = []
-    with open(path, mode='r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            data.append(row)
-    return data
-
-def load_courses(path='dados/cursos.csv'):
-    cursos = load_csv(path)
-    for c in cursos:
-        c['id'] = int(c['id'])
-        c['n_turmas'] = int(c['n_turmas'])
-    return cursos
-
-def load_teachers(path='dados/professores.csv'):
-    professores = load_csv(path)
-    for p in professores:
-        p['id'] = int(p['id'])
-    return professores
-
-def load_rooms(path='dados/salas.csv'):
-    salas = load_csv(path)
-    for s in salas:
-        s['id'] = int(s['id'])
-    return salas
-
-def load_curricular_units(path='dados/unidades_curriculares.csv'):
-    ucs = load_csv(path)
-    seen = set()
-    ucs_unique = []
-    for u in ucs:
-        if u['id'] not in seen:
-            u['id'] = int(u['id'])
-            u['curso_id'] = int(u['curso_id'])
-            u['n_aulas_semana'] = int(u['n_aulas_semana'])
-            ucs_unique.append(u)
-            seen.add(u['id'])
-    return ucs_unique
-
-def load_availabilities(path='dados/disponibilidades.csv'):
-    disp = load_csv(path)
-    for d in disp:
-        d['prof_id'] = int(d['prof_id'])
-        d['hora_inicio'] = int(d['hora_inicio'])
-        d['hora_fim'] = int(d['hora_fim'])
-    return disp
-
-def load_classes(path='dados/turmas.csv'):
-    turmas = load_csv(path)
-    seen = set()
-    turmas_unique = []
-    for t in turmas:
-        if t['id'] not in seen:
-            t['id'] = int(t['id'])
-            t['curso_id'] = int(t['curso_id'])
-            turmas_unique.append(t)
-            seen.add(t['id'])
-    return turmas_unique
-
-def load_all():
-    return {
-        'cursos': load_courses(),
-        'professores': load_teachers(),
-        'salas': load_rooms(),
-        'unidades_curriculares': load_curricular_units(),
-        'turmas': load_classes(),
-        'disponibilidades': load_availabilities()
+def load_data_txt(path='dados/data.txt'):
+    data = {
+        'classes': {},           # #cc — cursos atribuídos a turmas
+        'one_lesson_week': [],   # #olw — cursos com apenas uma aula/semana
+        'teachers': {},          # #dsd — professores e UCs atribuídas
+        'time_restrictions': {}, # #tr — restrições de horários (NÃO disponíveis)
+        'room_restrictions': {}, # #rr — restrições de salas
+        'online_classes': {},    # #oc — aulas online
+        'time_availabilities': {} # calculadas automaticamente (disponíveis)
     }
 
+    current_section = None
+
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('—') or line.startswith('#head'):
+                continue
+
+            # Identificar secções
+            if line.startswith('#'):
+                if line.startswith('#cc'):
+                    current_section = 'classes'
+                elif line.startswith('#olw'):
+                    current_section = 'one_lesson_week'
+                elif line.startswith('#dsd'):
+                    current_section = 'teachers'
+                elif line.startswith('#tr'):
+                    current_section = 'time_restrictions'
+                elif line.startswith('#rr'):
+                    current_section = 'room_restrictions'
+                elif line.startswith('#oc'):
+                    current_section = 'online_classes'
+                else:
+                    current_section = None
+                continue
+
+            parts = line.split()
+            if not parts:
+                continue
+
+            if current_section == 'classes':
+                turma = parts[0]
+                ucs = parts[1:]
+                data['classes'][turma] = ucs
+
+            elif current_section == 'one_lesson_week':
+                data['one_lesson_week'].append(parts[0])
+
+            elif current_section == 'teachers':
+                professor = parts[0]
+                ucs = parts[1:]
+                data['teachers'][professor] = ucs
+
+            elif current_section == 'time_restrictions':
+                professor = parts[0]
+                not_available = [int(x) for x in parts[1:]]
+                data['time_restrictions'][professor] = not_available
+
+            elif current_section == 'room_restrictions':
+                uc, sala = parts
+                data['room_restrictions'][uc] = sala
+
+            elif current_section == 'online_classes':
+                uc, idx = parts
+                data['online_classes'][uc] = int(idx)
+
+    # Converter restrições em disponibilidades para todos os professores
+    all_slots = set(range(1, 21))  # 20 blocos (5 dias × 4 blocos)
+    for prof in data['teachers'].keys():  # garantir todos os professores
+        unavailable = data['time_restrictions'].get(prof, [])  # se não tiver, assume []
+        available = sorted(all_slots - set(unavailable))
+        data['time_availabilities'][prof] = available
+
+    return data
+
+
 if __name__ == "__main__":
-    dados = load_all()
-    print("=== Cursos ===")
-    for c in dados['cursos']:
-        print(c)
+    dados = load_data_txt()
 
-    print("\n=== Professores ===")
-    for p in dados['professores']:
-        print(p)
+    print("=== Professores e UCs ===")
+    for prof, ucs in dados['teachers'].items():
+        print(f"{prof}: {ucs}")
 
-    print("\n=== Salas ===")
-    for s in [s['nome'] for s in dados['salas']]:
-        print(s)
+    print("\n=== Slots indisponíveis ===")
+    for prof, slots in dados['time_restrictions'].items():
+        print(f"{prof}: {slots}")
 
-    print("\n=== Turmas ===")
-    for t in dados['turmas']:
-        print(t)
-
-    print("\n=== Unidades Curriculares ===")
-    for u in dados['unidades_curriculares']:
-        print(u)
-
-    print("\n=== Disponibilidades ===")
-    for d in dados['disponibilidades']:
-        print(d)
+    print("\n=== Slots disponíveis ===")
+    for prof, slots in dados['time_availabilities'].items():
+        print(f"{prof}: {slots}")
