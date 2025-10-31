@@ -3,7 +3,7 @@ from load import load_data_txt
 from hard_constraints_def import *
 from soft_constraints_def import *
 
-# === Carregar dados ===
+#  Carregar dados 
 dados = load_data_txt()
 
 dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
@@ -26,7 +26,7 @@ for turma, ucs_list in dados['classes'].items():
                 uc_to_professor[uc] = prof
                 break
 
-# === Criar problema CSP ===
+#  Criar problema CSP 
 problem = Problem()
 all_vars = []
 
@@ -74,7 +74,7 @@ for uc in ucs:
 problem.addConstraint(lambda *a: exactly_two_per_uc(*a, ucs=ucs), all_vars)
 problem.addConstraint(lambda *a: exactly_ten_per_turma(*a, turmas=turmas), all_vars)
 
-# === Gerar soluções iterativamente ===
+#  Gerar soluções iterativamente 
 print("🧩 A gerar soluções válidas...")
 MAX_SOLUTIONS = 200
 solucoes = []
@@ -90,7 +90,7 @@ if not solucoes:
 
 print(f"✅ Encontradas {len(solucoes)} soluções válidas (limitadas a {MAX_SOLUTIONS})")
 
-# === Avaliar soft constraints ===
+#  Avaliar soft constraints 
 def pontuacao(sol):
     aulas = []
     for val in sol.values():
@@ -114,7 +114,7 @@ avaliadas.sort(key=lambda x: x[1], reverse=True)
 melhor_sol, melhor_score = avaliadas[0]
 print(f"🏆 Melhor solução encontrada com pontuação: {melhor_score}/4\n")
 
-# === Visualizar melhor solução ===
+#  Visualizar melhor solução 
 for t in turmas:
     print(f"📘 Turma {t}")
     tabela = {dia: [""]*4 for dia in dias}
