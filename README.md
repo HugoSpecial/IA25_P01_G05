@@ -55,6 +55,26 @@ O projeto deve ser **implementado em Python**, recorrendo a um **Jupyter Noteboo
 
 ---
 
+
+## Como Executar
+
+- Ter o **Python 3.10+** instalado.  
+- Ter a biblioteca **python-constraint** instalada:
+  ```bash
+  pip install python-constraint
+  ```
+- Entrar na pasta src/:
+  ```bash
+  cd src/
+  ```
+- Executar o main.py:
+  ```bash
+  python main.py
+  ```
+  
+
+---
+
 ## Resultados Esperados
 - **Horários completos e válidos** para todos os cursos.  
 - **Cumprimento total** das restrições obrigatórias.  
